@@ -55,14 +55,13 @@ export default function CreateNote() {
 
     const payload = {
       title: note.title,
-      description: note.description,
-      tags: note.tags.split(',').map(tag => tag.trim()),
-      lat: note.location.lat,
-      lng: note.location.lng,
+      content: note.description, // ✅ Match "content"
+      latitude: note.location.lat, // ✅ Match "latitude"
+      longitude: note.location.lng, // ✅ Match "longitude"
     };
 
     try {
-      await axios.post('/api/notes', payload, {
+      await axios.post('http://localhost:5000/api/notes', payload, {
         headers: {
           Authorization: `Bearer ${token}`,
         },

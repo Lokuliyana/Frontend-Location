@@ -13,11 +13,11 @@ export default function ViewNotes() {
         const transformed = data.map(note => ({
           id: note.id,
           title: note.title,
-          description: note.description,
-          tags: note.tags ? note.tags : [], // if your backend supports tags separately
+          description: note.description, // from backend 'content'
+          tags: [], // backend doesn't return tags yet
           location: {
-            lat: note.latitude,
-            lng: note.longitude,
+            lat: note.lat,
+            lng: note.lng,
           },
         }));
         setNotes(transformed);
@@ -43,14 +43,18 @@ export default function ViewNotes() {
     });
   };
 
+  
   const handleSave = () => {
-    fetch(`http://localhost:5000/api/notes?id=${editingNote}`, {
+    fetch(`http://localhost:5000/api/notes/${editingNote}`, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        // Uncomment below if backend requires JWT auth:
+        'Authorization': `Bearer ${token}`,
+      },
       body: JSON.stringify({
         title: editedData.title,
-        description: editedData.description,
-        tags: editedData.tags,
+        content: editedData.description, // match backend field
       }),
     })
       .then((res) => {
@@ -75,11 +79,15 @@ export default function ViewNotes() {
       .catch((err) => alert(err.message));
   };
 
+  const token = localStorage.getItem('token');
+
   const handleDelete = (id) => {
     if (!window.confirm('Are you sure you want to delete this note?')) return;
 
-    fetch(`http://localhost:5000/api/notes?id=${id}`, {
+    fetch(`http://localhost:5000/api/notes/${id}`, {
       method: 'DELETE',
+      // Uncomment if needed:
+      headers: { 'Authorization': `Bearer ${token}` },
     })
       .then((res) => {
         if (!res.ok) throw new Error('Failed to delete note');
@@ -92,7 +100,7 @@ export default function ViewNotes() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-100000 p-6">
+    <div className="min-h-screen bg-gray-1000 p-6">
       <div className="max-w-4xl mx-auto bg-white shadow-md rounded-lg p-6">
         <h2 className="text-2xl font-bold mb-4">Saved Notes</h2>
 
