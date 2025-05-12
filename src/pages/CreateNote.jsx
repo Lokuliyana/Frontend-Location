@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { MapContainer, TileLayer, Marker, useMapEvents } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
 
 function LocationPicker({ onSelect }) {
   useMapEvents({
@@ -20,6 +21,10 @@ export default function CreateNote() {
     tags: '',
     location: null,
   });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  const navigate = useNavigate();
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -29,25 +34,48 @@ export default function CreateNote() {
   const handleLocationSelect = (latlng) => {
     setNote((prev) => ({ ...prev, location: latlng }));
   };
-  
-  const navigate = useNavigate();
-  const handleSubmit = (e) => {
-  e.preventDefault();
 
-  const newNote = {
-    ...note,
-    id: Date.now(),
-    tags: note.tags.split(',').map(tag => tag.trim()),
-    createdAt: new Date().toISOString(),
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setError('');
+
+    const token = localStorage.getItem('token');
+    if (!token) {
+      setError('Authentication required');
+      setLoading(false);
+      return;
+    }
+
+    if (!note.location) {
+      setError('Please select a location on the map.');
+      setLoading(false);
+      return;
+    }
+
+    const payload = {
+      title: note.title,
+      description: note.description,
+      tags: note.tags.split(',').map(tag => tag.trim()),
+      lat: note.location.lat,
+      lng: note.location.lng,
+    };
+
+    try {
+      await axios.post('/api/notes', payload, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      navigate('/dashboard');
+    } catch (err) {
+      console.error(err);
+      setError('Failed to save note.');
+    } finally {
+      setLoading(false);
+    }
   };
-
-  const existingNotes = JSON.parse(localStorage.getItem('notes') || '[]');
-  localStorage.setItem('notes', JSON.stringify([...existingNotes, newNote]));
-
-  console.log('Note saved:', newNote);
-  navigate('/dashboard'); // or show a confirmation
-};
-
 
   return (
     <div className="max-w-3xl mx-auto p-6">
@@ -94,11 +122,17 @@ export default function CreateNote() {
             </p>
           )}
         </div>
-        <button type="submit" className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">
-          Save Note
+
+        {error && <p className="text-red-500 text-sm">{error}</p>}
+
+        <button
+          type="submit"
+          className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+          disabled={loading}
+        >
+          {loading ? 'Saving...' : 'Save Note'}
         </button>
       </form>
     </div>
   );
 }
-    

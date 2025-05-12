@@ -7,23 +7,22 @@ export default function ViewNotes() {
   const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
-    const dummyNotes = [
-      {
-        id: 1,
-        title: 'Morning Walk',
-        description: 'Walked around the lake and noted bird activity.',
-        tags: ['nature', 'exercise'],
-        location: { lat: 37.7749, lng: -122.4194 },
-      },
-      {
-        id: 2,
-        title: 'Coffee Spot',
-        description: 'Found a nice coffee shop with great Wi-Fi.',
-        tags: ['cafe', 'remote work'],
-        location: { lat: 40.7128, lng: -74.006 },
-      },
-    ];
-    setNotes(dummyNotes);
+    fetch('http://localhost:5000/api/notes')
+      .then((res) => res.json())
+      .then((data) => {
+        const transformed = data.map(note => ({
+          id: note.id,
+          title: note.title,
+          description: note.description,
+          tags: note.tags ? note.tags : [], // if your backend supports tags separately
+          location: {
+            lat: note.latitude,
+            lng: note.longitude,
+          },
+        }));
+        setNotes(transformed);
+      })
+      .catch((err) => console.error('Failed to load notes:', err));
   }, []);
 
   const filteredNotes = notes.filter((note) => {
@@ -31,7 +30,7 @@ export default function ViewNotes() {
     return (
       note.title.toLowerCase().includes(search) ||
       note.description.toLowerCase().includes(search) ||
-      note.tags.some(tag => tag.toLowerCase().includes(search))
+      note.tags?.some(tag => tag.toLowerCase().includes(search))
     );
   });
 
@@ -45,20 +44,51 @@ export default function ViewNotes() {
   };
 
   const handleSave = () => {
-    setNotes((prev) =>
-      prev.map((n) =>
-        n.id === editingNote
-          ? { ...n, ...editedData, tags: editedData.tags.split(',').map(t => t.trim()) }
-          : n
-      )
-    );
-    setEditingNote(null);
+    fetch(`http://localhost:5000/api/notes?id=${editingNote}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        title: editedData.title,
+        description: editedData.description,
+        tags: editedData.tags,
+      }),
+    })
+      .then((res) => {
+        if (!res.ok) throw new Error('Failed to update note');
+        return res.json();
+      })
+      .then(() => {
+        setNotes((prev) =>
+          prev.map((n) =>
+            n.id === editingNote
+              ? {
+                  ...n,
+                  title: editedData.title,
+                  description: editedData.description,
+                  tags: editedData.tags.split(',').map((t) => t.trim()),
+                }
+              : n
+          )
+        );
+        setEditingNote(null);
+      })
+      .catch((err) => alert(err.message));
   };
 
   const handleDelete = (id) => {
-    if (window.confirm('Are you sure you want to delete this note?')) {
-      setNotes((prev) => prev.filter((note) => note.id !== id));
-    }
+    if (!window.confirm('Are you sure you want to delete this note?')) return;
+
+    fetch(`http://localhost:5000/api/notes?id=${id}`, {
+      method: 'DELETE',
+    })
+      .then((res) => {
+        if (!res.ok) throw new Error('Failed to delete note');
+        return res.json();
+      })
+      .then(() => {
+        setNotes((prev) => prev.filter((note) => note.id !== id));
+      })
+      .catch((err) => alert(err.message));
   };
 
   return (
@@ -66,7 +96,6 @@ export default function ViewNotes() {
       <div className="max-w-4xl mx-auto bg-white shadow-md rounded-lg p-6">
         <h2 className="text-2xl font-bold mb-4">Saved Notes</h2>
 
-        {/* Search Input */}
         <input
           type="text"
           className="mb-6 p-3 w-full border border-gray-300 rounded-lg shadow-sm"
@@ -120,10 +149,10 @@ export default function ViewNotes() {
                   <>
                     <h3 className="text-xl font-bold text-gray-600">{note.title}</h3>
                     <p className="text-gray-700 mb-2">{note.description}</p>
-                    <p className="text-sm text-gray-600">Tags: {note.tags.join(', ')}</p>
+                    <p className="text-sm text-gray-600">Tags: {note.tags?.join(', ')}</p>
                     {note.location && (
                       <p className="text-sm text-gray-500">
-                        Location: {note.location.lat.toFixed(4)}, {note.location.lng.toFixed(4)}
+                        Location: {note.location.lat?.toFixed(4)}, {note.location.lng?.toFixed(4)}
                       </p>
                     )}
                     <div className="mt-3 flex space-x-2">

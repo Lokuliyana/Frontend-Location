@@ -8,28 +8,35 @@ export default function RegisterPage() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [message, setMessage] = useState('');
+  const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
     try {
-      const response = await axios.post('http://localhost:5000/register', {
+      const response = await axios.post('http://localhost:5000/api/register', {
         name,
         email,
         username,
         password,
       });
 
+      const { token } = response.data;
+
+      localStorage.setItem('token', token);
       setMessage('Registration successful!');
+      navigate('/dashboard');
     } catch (error) {
-      setMessage('Registration failed: ' + (error.response?.data || error.message));
+      const errMsg =
+        error.response?.data || error.response?.data?.message || error.message;
+      setMessage('Registration failed: ' + errMsg);
     }
   };
 
   return (
-    <div className="flex justify-center items-center h-screen">
-      <div className="w-full max-w-md p-8 border rounded-lg shadow-lg">
-        <h1 className="text-4xl font-bold text-center mb-6">Register</h1>
+    <div className="flex justify-center items-center h-screen bg-gray-1000">
+      <div className="w-full max-w-md p-8 border rounded-lg shadow-lg bg-gray">
+        <h1 className="text-3xl font-bold text-center mb-6">Register</h1>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-white-700">Name</label>
@@ -38,7 +45,7 @@ export default function RegisterPage() {
               value={name}
               onChange={(e) => setName(e.target.value)}
               required
-              className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+              className="mt-1 w-full px-3 py-2 border rounded focus:outline-none focus:ring focus:border-blue-500"
             />
           </div>
           <div>
@@ -48,7 +55,7 @@ export default function RegisterPage() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
-              className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+              className="mt-1 w-full px-3 py-2 border rounded focus:outline-none focus:ring focus:border-blue-500"
             />
           </div>
           <div>
@@ -58,7 +65,7 @@ export default function RegisterPage() {
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               required
-              className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+              className="mt-1 w-full px-3 py-2 border rounded focus:outline-none focus:ring focus:border-blue-500"
             />
           </div>
           <div>
@@ -68,12 +75,12 @@ export default function RegisterPage() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
-              className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+              className="mt-1 w-full px-3 py-2 border rounded focus:outline-none focus:ring focus:border-blue-500"
             />
           </div>
           <button
             type="submit"
-            className="w-full bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700 transition-colors"
+            className="w-full bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700 transition"
           >
             Register
           </button>

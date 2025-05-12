@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
 
 export default function LoginPage() {
   const [username, setUsername] = useState('');
@@ -10,16 +11,29 @@ export default function LoginPage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // Just skip authentication logic for now
     try {
-      // Skip calling backend for authentication, just navigate to the dashboard
-      if (username && password) {
-        navigate('/dashboard'); // Navigate directly to the dashboard
-      } else {
-        setError('Please fill out both username and password.');
-      }
+      const response = await axios.post('http://localhost:5000/api/login', {
+        username,
+        password
+      }, {
+        withCredentials: true, // If you're using cookies for auth (optional)
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+
+      // Save token to localStorage or context
+      const { token } = response.data;
+      localStorage.setItem('token', token);
+
+      // Navigate to dashboard
+      navigate('/dashboard');
     } catch (err) {
-      setError('Login failed. Please check your credentials and try again.');
+      if (err.response && err.response.data) {
+        setError(err.response.data);
+      } else {
+        setError('Login failed. Please try again.');
+      }
     }
   };
 
